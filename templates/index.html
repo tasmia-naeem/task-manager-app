@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}TaskFlow · Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Hero + stats -->
+<section class="hero">
+  <div>
+    <h1>Your work, <span class="accent-text">clear and simple.</span></h1>
+    <p class="muted">Create, track and complete your tasks with ease.</p>
+  </div>
+</section>
+
+<section class="stats">
+  <div class="stat-card">
+    <span class="stat-label">Total</span>
+    <span class="stat-value">{{ stats.total }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Pending</span>
+    <span class="stat-value">{{ stats.pending }}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Completed</span>
+    <span class="stat-value">{{ stats.completed }}</span>
+  </div>
+  <div class="stat-card stat-progress">
+    <span class="stat-label">Progress · {{ stats.percent }}%</span>
+    <!-- Fixed Line 30: using CSS variable to avoid VS Code error -->
+    <div class="progress" style="--progress-width: {{ stats.percent }}%">
+      <div class="progress-bar" style="width: var(--progress-width)"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Success message -->
+{% if flash %}
+  <div class="alert alert-success" role="status">✅ {{ flash }}</div>
+{% endif %}
+
+<!-- Add task form -->
+<section class="panel">
+  <h2>New Task</h2>
+
+  <form method="post" action="/add-task" novalidate>
+    <!-- Keep current filter -->
+    <input type="hidden" name="status" value="{{ current_filter }}">
+
+    <div class="field {% if errors.title %}has-error{% endif %}">
+      <input type="text" id="title" name="title" placeholder=" " maxlength="{{ title_max + 40 }}"
+             value="{{ form.title }}" autocomplete="off">
+      <label for="title">Task title</label>
+    </div>
+    {% if errors.title %}
+      <div class="alert alert-error" role="alert">⚠️ {{ errors.title }}</div>
+    {% endif %}
+
+    <div class="field {% if errors.description %}has-error{% endif %}">
+      <textarea id="description" name="description" placeholder=" " rows="3">{{ form.description }}</textarea>
+      <label for="description">Description (optional)</label>
+    </div>
+    {% if errors.description %}
+      <div class="alert alert-error" role="alert">⚠️ {{ errors.description }}</div>
+    {% endif %}
+
+    <button type="submit" class="btn btn-primary">＋ Add Task</button>
+  </form>
+</section>
+
+<!-- Filters -->
+<nav class="filters" aria-label="Task filters">
+  {% for f in filters %}
+    <a href="/?status={{ f }}" class="filter-tab {% if f == current_filter %}active{% endif %}">{{ f }}</a>
+  {% endfor %}
+</nav>
+
+<!-- Task cards -->
+{% if tasks %}
+<section class="grid">
+  {% for task in tasks %}
+  <article class="card {% if task.status == 'Completed' %}is-completed{% endif %}">
+    <div class="card-top">
+      <span class="badge {% if task.status == 'Completed' %}badge-done{% else %}badge-pending{% endif %}">
+        {{ '✓ ' if task.status == 'Completed' else '● ' }}{{ task.status }}
+      </span>
+      <span class="task-id">#{{ task.id }}</span>
+    </div>
+
+    <h3 class="card-title">{{ task.title }}</h3>
+    {% if task.description %}
+      <p class="card-desc">{{ task.description }}</p>
+    {% else %}
+      <p class="card-desc muted">No description provided.</p>
+    {% endif %}
+
+    <div class="card-actions">
+      <a href="/edit/{{ task.id }}" class="btn btn-ghost">✏️ Edit</a>
+
+      <form method="post" action="/complete/{{ task.id }}">
+        <input type="hidden" name="status" value="{{ current_filter }}">
+        <button type="submit" class="btn btn-success">
+          {% if task.status == 'Completed' %}↩ Reopen{% else %}✔ Complete{% endif %}
+        </button>
+      </form>
+
+      <form method="post" action="/delete/{{ task.id }}">
+        <input type="hidden" name="status" value="{{ current_filter }}">
+        <button type="submit" class="btn btn-danger">🗑 Delete</button>
+      </form>
+    </div>
+  </article>
+  {% endfor %}
+</section>
+{% else %}
+<!-- Empty state -->
+<section class="empty">
+  <svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
+    <rect x="22" y="18" width="76" height="92" rx="12" fill="none" stroke="currentColor" stroke-width="3" opacity=".35"/>
+    <rect x="40" y="10" width="40" height="16" rx="6" fill="var(--primary-color)"/>
+    <path d="M38 52h44M38 68h44M38 84h26" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity=".3"/>
+    <circle cx="92" cy="92" r="18" fill="var(--primary-color)"/>
+    <path d="M84 92l6 6 11-12" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  {% if current_filter == 'All' %}
+    <h3>No tasks yet</h3>
+    <p class="muted">Add your first task using the form above.</p>
+  {% else %}
+    <h3>No tasks in {{ current_filter }}</h3>
+    <p class="muted">Try changing the filter or create a new task.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% endblock %}

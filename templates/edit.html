@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}TaskFlow · Edit Task #{{ task.id }}{% endblock %}
+
+{% block content %}
+<section class="panel panel-narrow">
+  <a href="/" class="back-link">← Back to Dashboard</a>
+  <h2>Edit Task #{{ task.id }}</h2>
+
+  <!-- Form posts to /edit/{id} so server knows which task to update -->
+  <form method="post" action="/edit/{{ task.id }}" novalidate>
+
+    <div class="field {% if errors.title %}has-error{% endif %}">
+      <input type="text" id="title" name="title" placeholder=" " value="{{ form.title }}" autocomplete="off">
+      <label for="title">Task title</label>
+    </div>
+    {% if errors.title %}
+      <div class="alert alert-error" role="alert">⚠️ {{ errors.title }}</div>
+    {% endif %}
+
+    <div class="field {% if errors.description %}has-error{% endif %}">
+      <textarea id="description" name="description" placeholder=" " rows="5">{{ form.description }}</textarea>
+      <label for="description">Description</label>
+    </div>
+    {% if errors.description %}
+      <div class="alert alert-error" role="alert">⚠️ {{ errors.description }}</div>
+    {% endif %}
+
+    <div class="field field-select">
+      <select id="task_status" name="task_status">
+        <option value="Pending" {% if (form.status or task.status) == 'Pending' %}selected{% endif %}>Pending</option>
+        <option value="Completed" {% if (form.status or task.status) == 'Completed' %}selected{% endif %}>Completed</option>
+      </select>
+      <label for="task_status">Status</label>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+      <a href="/" class="btn btn-ghost">Cancel</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}TaskFlow{% endblock %}</title>
+
+  <!-- Google Fonts: Outfit (headings) + Inter (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+
+  <!-- Loads in head to apply saved theme before render (prevents flash) -->
+  <script src="{{ url_for('static', path='theme.js') }}"></script>
+</head>
+<body>
+
+  <!-- Sticky navbar -->
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <a href="/" class="brand">
+        <span class="brand-logo" aria-hidden="true">✓</span>
+        <span class="brand-name">TaskFlow</span>
+      </a>
+      <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">
+        <span id="theme-icon">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer">TaskFlow · FastAPI + Jinja2 · Data stored in memory, resets on restart</footer>
+</body>
+</html>

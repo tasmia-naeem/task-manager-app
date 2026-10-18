@@ -1,4 +1,3 @@
-
 (function () {
   var KEY = "taskflow-theme";
   var saved = null;
@@ -33,5 +32,26 @@
     function updateIcon() {
       icon.textContent = body.classList.contains("dark-theme") ? "☀️" : "🌙";
     }
+
+    // ---- Mobile sidebar (drawer) ----
+    // On small screens the CSS hides the sidebar off-screen. Adding the "nav-open"
+    // class to <body> slides it in and shows the dark overlay (scrim).
+    var menuBtn = document.getElementById("menu-toggle");
+    var scrim = document.getElementById("scrim");
+
+    function setNav(open) {
+      body.classList.toggle("nav-open", open);
+      if (menuBtn) menuBtn.setAttribute("aria-expanded", String(open));
+    }
+
+    if (menuBtn) {
+      menuBtn.addEventListener("click", function () {
+        setNav(!body.classList.contains("nav-open"));
+      });
+    }
+    if (scrim) scrim.addEventListener("click", function () { setNav(false); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") setNav(false); });
+    // If the window grows back to desktop size, make sure the drawer state is reset.
+    window.addEventListener("resize", function () { if (window.innerWidth > 900) setNav(false); });
   });
 })();

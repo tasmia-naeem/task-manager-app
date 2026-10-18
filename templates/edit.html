@@ -4,40 +4,69 @@
 
 {% block content %}
 <section class="panel panel-narrow">
-  <a href="/" class="back-link">← Back to Dashboard</a>
-  <h2>Edit Task #{{ task.id }}</h2>
+  <a href="/" class="back-link"><svg class="icon"><use href="#i-arrow-left"/></svg>Back to dashboard</a>
+  <h1 class="panel-title">Edit task #{{ task.id }}</h1>
+  <p class="muted panel-sub">Update the details below and save your changes.</p>
 
-  <!-- Form posts to /edit/{id} so server knows which task to update -->
+  <!-- The task ID is in the form action: the server uses it to find the right task -->
   <form method="post" action="/edit/{{ task.id }}" novalidate>
 
     <div class="field {% if errors.title %}has-error{% endif %}">
-      <input type="text" id="title" name="title" placeholder=" " value="{{ form.title }}" autocomplete="off">
+      <input type="text" id="title" name="title" placeholder=" " maxlength="{{ title_max + 40 }}"
+             value="{{ form.title }}" autocomplete="off">
       <label for="title">Task title</label>
     </div>
     {% if errors.title %}
-      <div class="alert alert-error" role="alert">⚠️ {{ errors.title }}</div>
+      <div class="alert alert-error" role="alert"><svg class="icon"><use href="#i-alert"/></svg><span>{{ errors.title }}</span></div>
     {% endif %}
 
     <div class="field {% if errors.description %}has-error{% endif %}">
-      <textarea id="description" name="description" placeholder=" " rows="5">{{ form.description }}</textarea>
+      <textarea id="description" name="description" placeholder=" " rows="5" maxlength="{{ desc_max + 200 }}">{{ form.description }}</textarea>
       <label for="description">Description</label>
     </div>
     {% if errors.description %}
-      <div class="alert alert-error" role="alert">⚠️ {{ errors.description }}</div>
+      <div class="alert alert-error" role="alert"><svg class="icon"><use href="#i-alert"/></svg><span>{{ errors.description }}</span></div>
     {% endif %}
+
+    <div class="field-row">
+      <div>
+        <div class="field field-select {% if errors.priority %}has-error{% endif %}">
+          <select id="priority" name="priority">
+            {% for p in priorities %}
+              <option value="{{ p }}" {% if form.priority == p %}selected{% endif %}>{{ p }}</option>
+            {% endfor %}
+          </select>
+          <label for="priority">Priority</label>
+        </div>
+        {% if errors.priority %}
+          <div class="alert alert-error" role="alert"><svg class="icon"><use href="#i-alert"/></svg><span>{{ errors.priority }}</span></div>
+        {% endif %}
+      </div>
+
+      <div>
+        <div class="field {% if errors.due_date %}has-error{% endif %}">
+          <input type="date" id="due_date" name="due_date" placeholder=" " value="{{ form.due_date }}">
+          <label for="due_date">Due date (optional)</label>
+        </div>
+        {% if errors.due_date %}
+          <div class="alert alert-error" role="alert"><svg class="icon"><use href="#i-alert"/></svg><span>{{ errors.due_date }}</span></div>
+        {% endif %}
+      </div>
+    </div>
 
     <div class="field field-select">
       <select id="task_status" name="task_status">
-        <option value="Pending" {% if (form.status or task.status) == 'Pending' %}selected{% endif %}>Pending</option>
-        <option value="Completed" {% if (form.status or task.status) == 'Completed' %}selected{% endif %}>Completed</option>
+        <option value="Pending" {% if form.status == 'Pending' %}selected{% endif %}>Pending</option>
+        <option value="Completed" {% if form.status == 'Completed' %}selected{% endif %}>Completed</option>
       </select>
       <label for="task_status">Status</label>
     </div>
 
     <div class="form-actions">
-      <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+      <button type="submit" class="btn btn-primary"><svg class="icon"><use href="#i-save"/></svg>Save changes</button>
       <a href="/" class="btn btn-ghost">Cancel</a>
     </div>
   </form>
 </section>
 {% endblock %}
+

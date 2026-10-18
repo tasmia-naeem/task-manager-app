@@ -1,51 +1,76 @@
 {% extends "base.html" %}
 
-{% block title %}TaskFlow · Dashboard{% endblock %}
+{% block title %}TaskFlow · {{ page_title }}{% endblock %}
 
 {% block content %}
 
-<!-- Hero + stats -->
-<section class="hero">
-  <div>
-    <h1>Your work, <span class="accent-text">clear and simple.</span></h1>
-    <p class="muted">Create, track and complete your tasks with ease.</p>
-  </div>
+<!-- Page header -->
+<section class="page-head">
+  <h1>{{ page_title }}</h1>
+  <p class="muted">
+    {% if view == '' %}Here is what is happening with your tasks today.
+    {% elif view == 'All' %}Every task in your workspace.
+    {% elif view == 'Pending' %}Tasks that still need your attention.
+    {% else %}Everything you have finished. Great work!{% endif %}
+  </p>
 </section>
 
-<section class="stats">
-  <div class="stat-card">
-    <span class="stat-label">Total</span>
-    <span class="stat-value">{{ stats.total }}</span>
-  </div>
-  <div class="stat-card">
-    <span class="stat-label">Pending</span>
-    <span class="stat-value">{{ stats.pending }}</span>
-  </div>
-  <div class="stat-card">
-    <span class="stat-label">Completed</span>
-    <span class="stat-value">{{ stats.completed }}</span>
-  </div>
-  <div class="stat-card stat-progress">
-    <span class="stat-label">Progress · {{ stats.percent }}%</span>
-    <!-- Fixed Line 30: using CSS variable to avoid VS Code error -->
-    <div class="progress" style="--progress-width: {{ stats.percent }}%">
-      <div class="progress-bar" style="width: var(--progress-width)"></div>
+<!-- 4 stat cards (always count ALL tasks, not just the filtered ones) -->
+<section class="stats" aria-label="Task statistics">
+  <article class="stat-card">
+    <span class="stat-icon tone-violet"><svg class="icon"><use href="#i-list"/></svg></span>
+    <div class="stat-body">
+      <span class="stat-label">Total tasks</span>
+      <span class="stat-value">{{ stats.total }}</span>
+      <span class="stat-sub">in your workspace</span>
     </div>
-  </div>
+  </article>
+
+  <article class="stat-card">
+    <span class="stat-icon tone-purple"><svg class="icon"><use href="#i-clock"/></svg></span>
+    <div class="stat-body">
+      <span class="stat-label">Pending</span>
+      <span class="stat-value">{{ stats.pending }}</span>
+      <span class="stat-sub">waiting to be done</span>
+    </div>
+  </article>
+
+  <article class="stat-card">
+    <span class="stat-icon tone-green"><svg class="icon"><use href="#i-check-circle"/></svg></span>
+    <div class="stat-body">
+      <span class="stat-label">Completed</span>
+      <span class="stat-value">{{ stats.completed }}</span>
+      <span class="stat-sub">{{ stats.percent }}% done</span>
+      <span class="progress-bar" style="--p: {{ stats.percent }}%; width: var(--p)"></span>>
+    </div>
+  </article>
+
+  <article class="stat-card">
+    <span class="stat-icon tone-red"><svg class="icon"><use href="#i-flag"/></svg></span>
+    <div class="stat-body">
+      <span class="stat-label">High priority</span>
+      <span class="stat-value">{{ stats.high }}</span>
+      <span class="stat-sub">{{ stats.high_open }} still open</span>
+    </div>
+  </article>
 </section>
 
-<!-- Success message -->
+<!-- Success message (shown after a redirect) -->
 {% if flash %}
-  <div class="alert alert-success" role="status">✅ {{ flash }}</div>
+  <div class="alert alert-success" role="status"><svg class="icon"><use href="#i-check-circle"/></svg><span>{{ flash }}</span></div>
 {% endif %}
 
-<!-- Add task form -->
-<section class="panel">
-  <h2>New Task</h2>
+<!-- New task: a <details> element opens/closes with NO JavaScript. It starts open when validation failed. -->
+<details class="composer" id="composer" {% if composer_open %}open{% endif %}>
+  <summary>
+    <span class="composer-plus"><svg class="icon"><use href="#i-plus"/></svg></span>
+    <span>Add a new task</span>
+  </summary>
 
-  <form method="post" action="/add-task" novalidate>
-    <!-- Keep current filter -->
-    <input type="hidden" name="status" value="{{ current_filter }}">
+  <form method="post" action="/add-task" novalidate class="composer-form">
+    <!-- Hidden fields remember where the user was (view + search) -->
+    <input type="hidden" name="status" value="{{ view }}">
+    <input type="hidden" name="q" value="{{ q }}">
 
     <div class="field {% if errors.title %}has-error{% endif %}">
       <input type="text" id="title" name="title" placeholder=" " maxlength="{{ title_max + 40 }}"
@@ -53,27 +78,58 @@
       <label for="title">Task title</label>
     </div>
     {% if errors.title %}
-      <div class="alert alert-error" role="alert">⚠️ {{ errors.title }}</div>
+      <div class="alert alert-error" role="alert"><svg class="icon"><use href="#i-alert"/></svg><span>{{ errors.title }}</span></div>
     {% endif %}
 
     <div class="field {% if errors.description %}has-error{% endif %}">
-      <textarea id="description" name="description" placeholder=" " rows="3">{{ form.description }}</textarea>
+      <textarea id="description" name="description" placeholder=" " rows="3" maxlength="{{ desc_max + 200 }}">{{ form.description }}</textarea>
       <label for="description">Description (optional)</label>
     </div>
     {% if errors.description %}
-      <div class="alert alert-error" role="alert">⚠️ {{ errors.description }}</div>
+      <div class="alert alert-error" role="alert"><svg class="icon"><use href="#i-alert"/></svg><span>{{ errors.description }}</span></div>
     {% endif %}
 
-    <button type="submit" class="btn btn-primary">＋ Add Task</button>
-  </form>
-</section>
+    <div class="field-row">
+      <div>
+        <div class="field field-select {% if errors.priority %}has-error{% endif %}">
+          <select id="priority" name="priority">
+            {% for p in priorities %}
+              <option value="{{ p }}" {% if form.priority == p %}selected{% endif %}>{{ p }}</option>
+            {% endfor %}
+          </select>
+          <label for="priority">Priority</label>
+        </div>
+        {% if errors.priority %}
+          <div class="alert alert-error" role="alert"><svg class="icon"><use href="#i-alert"/></svg><span>{{ errors.priority }}</span></div>
+        {% endif %}
+      </div>
 
-<!-- Filters -->
-<nav class="filters" aria-label="Task filters">
-  {% for f in filters %}
-    <a href="/?status={{ f }}" class="filter-tab {% if f == current_filter %}active{% endif %}">{{ f }}</a>
-  {% endfor %}
-</nav>
+      <div>
+        <div class="field {% if errors.due_date %}has-error{% endif %}">
+          <input type="date" id="due_date" name="due_date" placeholder=" " value="{{ form.due_date }}">
+          <label for="due_date">Due date (optional)</label>
+        </div>
+        {% if errors.due_date %}
+          <div class="alert alert-error" role="alert"><svg class="icon"><use href="#i-alert"/></svg><span>{{ errors.due_date }}</span></div>
+        {% endif %}
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary"><svg class="icon"><use href="#i-plus"/></svg>Add task</button>
+  </form>
+</details>
+
+<!-- Toolbar: status filter tabs (GET query params) + result count -->
+<div class="toolbar">
+  <nav class="filters" aria-label="Task filters">
+    {% for f in filters %}
+      <a href="/?status={{ f }}{{ q_param }}" class="filter-tab {% if f == view %}active{% endif %}">{{ f }}</a>
+    {% endfor %}
+  </nav>
+  <p class="result-count muted">
+    {{ result_count }} task{{ '' if result_count == 1 else 's' }}{% if q %} matching "<strong>{{ q }}</strong>" · <a href="{{ view_url }}" class="link">Clear search</a>{% endif %}
+  </p>
+</div>
 
 <!-- Task cards -->
 {% if tasks %}
@@ -81,9 +137,12 @@
   {% for task in tasks %}
   <article class="card {% if task.status == 'Completed' %}is-completed{% endif %}">
     <div class="card-top">
-      <span class="badge {% if task.status == 'Completed' %}badge-done{% else %}badge-pending{% endif %}">
-        {{ '✓ ' if task.status == 'Completed' else '● ' }}{{ task.status }}
-      </span>
+      <div class="badges">
+        <span class="badge badge-prio prio-{{ task.priority | lower }}">{{ task.priority }}</span>
+        <span class="badge {% if task.status == 'Completed' %}badge-done{% else %}badge-pending{% endif %}">
+          {{ task.status }}
+        </span>
+      </div>
       <span class="task-id">#{{ task.id }}</span>
     </div>
 
@@ -91,29 +150,44 @@
     {% if task.description %}
       <p class="card-desc">{{ task.description }}</p>
     {% else %}
-      <p class="card-desc muted">No description provided.</p>
+      <p class="card-desc muted">No description.</p>
     {% endif %}
 
+    <!-- Due date with icon (coloured when overdue / due today) -->
+    <div class="card-meta">
+      {% if task.due_label %}
+        <span class="due {% if task.due_state %}due-{{ task.due_state }}{% endif %}">
+          <svg class="icon"><use href="#i-calendar"/></svg>
+          <span>{{ task.due_label }}</span>
+          {% if task.due_note %}<span class="due-note">{{ task.due_note }}</span>{% endif %}
+        </span>
+      {% else %}
+        <span class="due due-none"><svg class="icon"><use href="#i-calendar"/></svg><span>No due date</span></span>
+      {% endif %}
+    </div>
+
     <div class="card-actions">
-      <a href="/edit/{{ task.id }}" class="btn btn-ghost">✏️ Edit</a>
+      <a href="/edit/{{ task.id }}" class="btn btn-ghost"><svg class="icon"><use href="#i-edit"/></svg>Edit</a>
 
       <form method="post" action="/complete/{{ task.id }}">
-        <input type="hidden" name="status" value="{{ current_filter }}">
+        <input type="hidden" name="status" value="{{ view }}">
+        <input type="hidden" name="q" value="{{ q }}">
         <button type="submit" class="btn btn-success">
-          {% if task.status == 'Completed' %}↩ Reopen{% else %}✔ Complete{% endif %}
+          {% if task.status == 'Completed' %}<svg class="icon"><use href="#i-undo"/></svg>Reopen{% else %}<svg class="icon"><use href="#i-check"/></svg>Complete{% endif %}
         </button>
       </form>
 
       <form method="post" action="/delete/{{ task.id }}">
-        <input type="hidden" name="status" value="{{ current_filter }}">
-        <button type="submit" class="btn btn-danger">🗑 Delete</button>
+        <input type="hidden" name="status" value="{{ view }}">
+        <input type="hidden" name="q" value="{{ q }}">
+        <button type="submit" class="btn btn-danger btn-icon" aria-label="Delete task {{ task.id }}" title="Delete task"><svg class="icon"><use href="#i-trash"/></svg></button>
       </form>
     </div>
   </article>
   {% endfor %}
 </section>
 {% else %}
-<!-- Empty state -->
+<!-- Empty state (3 flavours: search, nothing created yet, empty filter) -->
 <section class="empty">
   <svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true">
     <rect x="22" y="18" width="76" height="92" rx="12" fill="none" stroke="currentColor" stroke-width="3" opacity=".35"/>
@@ -122,14 +196,18 @@
     <circle cx="92" cy="92" r="18" fill="var(--primary-color)"/>
     <path d="M84 92l6 6 11-12" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>
-  {% if current_filter == 'All' %}
+  {% if q %}
+    <h3>No results for "{{ q }}"</h3>
+    <p class="muted">Try a different keyword or <a href="{{ view_url }}" class="link">clear the search</a>.</p>
+  {% elif stats.total == 0 %}
     <h3>No tasks yet</h3>
-    <p class="muted">Add your first task using the form above.</p>
+    <p class="muted">Use "Add a new task" above to create your first one.</p>
   {% else %}
-    <h3>No tasks in {{ current_filter }}</h3>
-    <p class="muted">Try changing the filter or create a new task.</p>
+    <h3>No {{ view }} tasks</h3>
+    <p class="muted">Try another filter or create a new task.</p>
   {% endif %}
 </section>
 {% endif %}
 
 {% endblock %}
+
